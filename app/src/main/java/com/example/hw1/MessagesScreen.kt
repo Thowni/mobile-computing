@@ -32,10 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 
-
 data class Message(val author: String, val body: String)
-
-
 
 @Composable
 fun MessagesScreen(navController: NavController) {

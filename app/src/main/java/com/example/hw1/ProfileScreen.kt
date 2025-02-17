@@ -1,5 +1,6 @@
 package com.example.hw1
 
+import android.Manifest
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -34,12 +35,15 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import android.net.Uri
+import android.os.Build
+import android.widget.Toast
+import androidx.compose.material3.Button
 import java.io.File
 import java.io.FileOutputStream
 
 
 @Composable
-fun ProfileScreen(navController: NavController) {
+fun ProfileScreen(navController: NavController, activity: MainActivity) {
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -62,6 +66,31 @@ fun ProfileScreen(navController: NavController) {
         return Uri.fromFile(file)
     }
 
+    @Composable
+    fun RequestNotificationPermission(context: Context) {
+        val permissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+            onResult = { isGranted ->
+                if (isGranted) {
+                    Toast.makeText(context, "Notification permission granted!", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Permission denied.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
+
+        Column {
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(onClick = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }) {
+                Text("Allow Notifications")
+            }
+        }
+    }
+
     val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null){
             savedImageUri = saveImageToInternalStorage(context, uri)
@@ -80,7 +109,7 @@ fun ProfileScreen(navController: NavController) {
 
     Column(modifier = Modifier.padding(16.dp)) {
         Spacer(modifier = Modifier.height(8.dp))
-        androidx.compose.material3.Button(onClick = { navController.navigate("messages"){
+        Button(onClick = { navController.navigate("messages"){
             popUpTo("messages"){
                 inclusive = true
             }
@@ -91,7 +120,7 @@ fun ProfileScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(8.dp))
 
         Row (verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(8.dp)){
+            modifier = Modifier.padding(8.dp)) {
             AsyncImage(
                 model = savedImageUri ?: R.drawable.carp,
                 contentDescription = null,
@@ -100,7 +129,7 @@ fun ProfileScreen(navController: NavController) {
                     .size(60.dp)
                     .clip(CircleShape)
                     .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                    .clickable { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))}
+                    .clickable { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
             )
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -110,11 +139,18 @@ fun ProfileScreen(navController: NavController) {
                 onValueChange = { newName ->
                     profileName = newName
                     scope.launch {
-                        dao.insertProfile(Profile(id = 1, name = newName, imageUri = savedImageUri.toString()))
+                        dao.insertProfile(
+                            Profile(
+                                id = 1,
+                                name = newName,
+                                imageUri = savedImageUri.toString()
+                            )
+                        )
                     }
                 },
                 label = { Text("Profile name") }
             )
         }
+        RequestNotificationPermission(context)
     }
 }
