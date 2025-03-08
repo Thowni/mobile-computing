@@ -39,9 +39,10 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         setContent {
             HW1Theme {
                 val navController = rememberNavController()
-                NavHost(navController = navController, startDestination = "messages") {
-                        composable("messages")  { MessagesScreen(navController) }
-                        composable("second") { ProfileScreen(navController, this@MainActivity) }
+                NavHost(navController = navController, startDestination = "splash") {
+                    composable("splash") { SplashScreen(navController) }
+                    composable("messages")  { MessagesScreen(navController) }
+                    composable("second") { ProfileScreen(navController, this@MainActivity) }
                 }
             }
         }
@@ -58,7 +59,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         notificationManager.createNotificationChannel(channel)
     }
 
-    fun sendNotification() {
+    private fun sendNotification() {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }

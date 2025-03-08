@@ -25,12 +25,12 @@ object SampleData {
         ),
         Message(
             "Lexi",
-            """I think Kotlin is my favorite programming language.
-            |It's so much fun!""".trim()
+            "Check out my cool video!"
         ),
         Message(
             "Lexi",
-            "Searching for alternatives to XML layouts..."
+            "Here it is!",
+            "https://filesamples.com/samples/video/mp4/sample_640x360.mp4"
         ),
         Message(
             "Lexi",

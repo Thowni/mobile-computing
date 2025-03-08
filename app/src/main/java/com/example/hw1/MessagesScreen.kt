@@ -31,12 +31,130 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
+import android.media.MediaPlayer
+import android.media.MediaRecorder
+import android.os.Environment
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import java.io.File
+import java.io.IOException
+import android.Manifest
+import android.widget.Toast
 
-data class Message(val author: String, val body: String)
+data class Message(val author: String, val body: String, val videoUrl: String? = null)
 
 @Composable
 fun MessagesScreen(navController: NavController) {
     Conversation(SampleData.conversationSample, navController)
+    AudioRecorderBar()
+}
+
+@Composable
+fun AudioRecorderBar() {
+    val context = LocalContext.current
+    var isRecording by remember { mutableStateOf(false) }
+    var isPlaying by remember { mutableStateOf(false) }
+    var hasPermission by remember { mutableStateOf(false) }
+    val audioFile = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "recorded_audio.mp3")
+
+    var mediaRecorder: MediaRecorder? by remember { mutableStateOf(null) }
+    var mediaPlayer: MediaPlayer? by remember { mutableStateOf(null) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            hasPermission = isGranted
+            if (isGranted) {
+                Toast.makeText(context, "Microphone permission granted!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Permission denied.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xffeaffff))
+                .padding(16.dp)
+                .align(Alignment.BottomCenter),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+
+                Button(
+                    onClick = {
+                        if (hasPermission) {
+                            if (!isRecording) {
+                                mediaRecorder = MediaRecorder().apply {
+                                    setAudioSource(MediaRecorder.AudioSource.MIC)
+                                    setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+                                    setOutputFile(audioFile.absolutePath)
+                                    setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+                                    try {
+                                        prepare()
+                                        start()
+                                        isRecording = true
+                                    } catch (e: IOException) {
+                                        Log.e("Microphone", "Recording failed", e)
+                                    }
+                                }
+                            } else {
+                                mediaRecorder?.apply {
+                                    stop()
+                                    release()
+                                }
+                                mediaRecorder = null
+                                isRecording = false
+                            }
+                        } else {
+                            Toast.makeText(context, "You haven't given microphone permissions", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(if (isRecording) Color.Red else Color.Blue)
+                ) {
+                    Text(if (isRecording) "Stop Recording" else "Record")
+                }
+
+                Button(
+                    onClick = {
+                        if (!isPlaying) {
+                            mediaPlayer = MediaPlayer().apply {
+                                setDataSource(audioFile.absolutePath)
+                                prepare()
+                                start()
+                                isPlaying = true
+
+                                setOnCompletionListener {
+                                    isPlaying = false
+                                    release()
+                                }
+                            }
+                        }
+                    },
+                    enabled = audioFile.exists()
+                ) {
+                    Text("Play Recording")
+                }
+            }
+            Button(
+                onClick = { permissionLauncher.launch(Manifest.permission.RECORD_AUDIO) },
+                colors = ButtonDefaults.buttonColors(if(!hasPermission) Color.Gray else Color.Green)
+            ) {
+                Text(if (!hasPermission) "Request Microphone Permission" else "Microphone permission already granted!")
+            }
+        }
+    }
 }
 
 @Composable
@@ -81,16 +199,20 @@ fun MessageCard(msg: Message, navController: NavController) {
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                shadowElevation = 1.dp,
-                color = surfaceColor,
-                modifier = Modifier.animateContentSize().padding(1.dp)
-            ) {
-                Text(text = msg.body,
-                    modifier = Modifier.padding(all = 4.dp),
-                    maxLines = if (isExpanded) Int.MAX_VALUE else 1,
-                    style = MaterialTheme.typography.bodyMedium)
+            if(msg.videoUrl != null){
+                VideoPlayer(videoUrl = msg.videoUrl)
+            } else {
+                Surface(
+                    shape = MaterialTheme.shapes.medium,
+                    shadowElevation = 1.dp,
+                    color = surfaceColor,
+                    modifier = Modifier.animateContentSize().padding(1.dp)
+                ) {
+                    Text(text = msg.body,
+                        modifier = Modifier.padding(all = 4.dp),
+                        maxLines = if (isExpanded) Int.MAX_VALUE else 1,
+                        style = MaterialTheme.typography.bodyMedium)
+                }
             }
         }
     }

@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.hw1"
-        minSdk = 26
+        minSdk = 31
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -67,6 +67,11 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
+
+    implementation("com.airbnb.android:lottie-compose:6.0.0")
+
+    implementation("androidx.media3:media3-exoplayer:1.2.0")
+    implementation("androidx.media3:media3-ui:1.2.0")
 
 
     // If this project uses any Kotlin source, use Kotlin Symbol Processing (KSP)
